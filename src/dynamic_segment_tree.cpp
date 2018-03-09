@@ -496,7 +496,7 @@ DynamicSegmentTree<Node, NodeTraits, Combiners, Options, Tag>::get_combined(cons
 		Combiners tmp = cp;
 		InnerNode * old = cur;
 
-		cur = cur->_rbt_parent;
+		cur = cur->get_parent();
 		if (cur->_rbt_left == old) {
 			cp.combine_with(&tmp, cur->agg_left);
 		} else {
@@ -540,7 +540,7 @@ DynamicSegmentTree<Node, NodeTraits, Combiners, Options, Tag>::InnerTree::
 	}
 
 	while(n->InnerNode::combiners.rebuild(cmb_left, n->agg_left, cmb_right, n->agg_right)) {
-		n = n->_rbt_parent;
+		n = n->get_parent();
 
 		if (n != nullptr) {
 			if (n->_rbt_left != nullptr) {
@@ -619,7 +619,7 @@ bool
 CombinerPack<AggValueT, Combiners...>::combine_with(CombinerPack<AggValueT, Combiners...> *other,
 																			              AggValueT edge_val)
 {
-	utilities::throw_away(std::get<Combiners>(this->data).combine_with(other->get<Combiners>(),
+	rbtree_internal::throw_away(std::get<Combiners>(this->data).combine_with(other->get<Combiners>(),
 	                                                                   edge_val) ...);
 	return false;
 }
