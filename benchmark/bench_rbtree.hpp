@@ -292,7 +292,7 @@ using CompressedTreeOptions = TreeOptions<TreeFlags::COMPRESS_COLOR>;
  * Inserting
  */
 
-BENCHMARK_F(RBTreeInsert, Ygg, YggTreeInsertFixture<BasicTreeOptions>, 30, 50)
+BASELINE_F(RBTreeInsert, Ygg, YggTreeInsertFixture<BasicTreeOptions>, 30, 50)
 {
 	this->t.clear();
 
@@ -303,7 +303,7 @@ BENCHMARK_F(RBTreeInsert, Ygg, YggTreeInsertFixture<BasicTreeOptions>, 30, 50)
 }
 
 
-BASELINE_F(RBTreeInsert, Boostset, BoostSetInsertFixture, 30, 50)
+BENCHMARK_F(RBTreeInsert, Boostset, BoostSetInsertFixture, 30, 50)
 {
 	this->t.clear();
 
@@ -347,7 +347,7 @@ BENCHMARK_F(RBTreeInsert, BoostMultiSet, BoostMultiSetInsertFixture, 30, 50)
  * Searching
  */
 
-BENCHMARK_F(RBTreeSearch, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 30, 50)
+BASELINE_F(RBTreeSearch, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 30, 50)
 {
   int sum = 0;
 	for (auto & v : this->search_values) {
@@ -358,7 +358,7 @@ BENCHMARK_F(RBTreeSearch, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 30, 50)
 	celero::DoNotOptimizeAway(sum);
 }
 
-BASELINE_F(RBTreeSearch, BoostSet, BoostSetSearchFixture, 30, 50)
+BENCHMARK_F(RBTreeSearch, BoostSet, BoostSetSearchFixture, 30, 50)
 {
 	int sum = 0;
 		for (auto & v : this->search_values) {
@@ -406,7 +406,7 @@ BENCHMARK_F(RBTreeSearch, BoostMultiSet, BoostMultiSetSearchFixture, 30, 50)
  * Iteration
  */
 
-BENCHMARK_F(RBTreeIteration, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 50, 200)
+BASELINE_F(RBTreeIteration, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 50, 200)
 {
 	for (const auto & n : this->t) {
 		//sum += n.value;
@@ -414,7 +414,7 @@ BENCHMARK_F(RBTreeIteration, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 50, 20
 	}
 }
 
-BASELINE_F(RBTreeIteration, BoostSet, BoostSetSearchFixture, 50, 200)
+BENCHMARK_F(RBTreeIteration, BoostSet, BoostSetSearchFixture, 50, 200)
 {
 	for (const auto &n : this->t) {
 		//sum += n.value;
@@ -450,7 +450,7 @@ BENCHMARK_F(RBTreeIteration, BoostMultiSet, BoostMultiSetSearchFixture, 50, 200)
  * Deletion
  */
 
-BENCHMARK_F(RBTreeDelete, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 1000, 1)
+BASELINE_F(RBTreeDelete, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 1000, 1)
 {
 	for (auto & v : this->search_values) {
 		this->t.remove(*v);
@@ -459,7 +459,7 @@ BENCHMARK_F(RBTreeDelete, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 1000, 1)
 	celero::DoNotOptimizeAway(this->t);
 }
 
-BASELINE_F(RBTreeDelete, BoostSet, BoostSetSearchFixture, 1000, 1)
+BENCHMARK_F(RBTreeDelete, BoostSet, BoostSetSearchFixture, 1000, 1)
 {
 	for (auto & v : this->search_values) {
 		this->t.erase(*v);
