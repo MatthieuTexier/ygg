@@ -74,10 +74,11 @@ public:
 /*
  * Ygg fixtures
  */
-class YggTreeBaseFixture : public RBTreeBaseFixture<true> {
+template<class MyTreeOptions>
+class YggTreeBaseFixture : public RBTreeBaseFixture<!MyTreeOptions::multiple> {
 public:
 
-	class Node : public RBTreeNodeBase<Node, TreeOptions<>>
+	class Node : public RBTreeNodeBase<Node, MyTreeOptions>
 	{
 	public:
 		int value;
@@ -87,11 +88,11 @@ public:
 		}
 	};
 
-	using Tree = RBTree<Node, RBDefaultNodeTraits<Node>, TreeOptions<>>;
+	using Tree = RBTree<Node, RBDefaultNodeTraits<Node>, MyTreeOptions>;
 
 	virtual void setUp(const int64_t number_of_nodes) override
 	{
-		this->RBTreeBaseFixture<true>::setUp(number_of_nodes);
+		this->RBTreeBaseFixture<!MyTreeOptions::multiple>::setUp(number_of_nodes);
 
 		this->nodes.resize(number_of_nodes);
 		for (int i = 0 ; i < number_of_nodes ; ++i) {
@@ -101,7 +102,7 @@ public:
 
 	virtual void tearDown() override
 	{
-		this->RBTreeBaseFixture<true>::tearDown();
+		this->RBTreeBaseFixture<!MyTreeOptions::multiple>::tearDown();
 
 		this->nodes.clear();
 	}
@@ -110,52 +111,17 @@ public:
 	Tree t;
 };
 
-class YggMultiTreeBaseFixture : public RBTreeBaseFixture<false> {
-public:
-
-	class Node : public RBTreeNodeBase<Node, TreeOptions<TreeFlags::MULTIPLE>>
-	{
-	public:
-		int value;
-
-		bool operator<(const Node & rhs) const {
-			return this->value < rhs.value;
-		}
-	};
-
-	using Tree = RBTree<Node, RBDefaultNodeTraits<Node>, TreeOptions<TreeFlags::MULTIPLE>>;
-
-	virtual void setUp(const int64_t number_of_nodes) override
-	{
-		this->RBTreeBaseFixture<false>::setUp(number_of_nodes);
-
-		this->nodes.resize(number_of_nodes);
-		for (int i = 0 ; i < number_of_nodes ; ++i) {
-			this->nodes[i].value = this->values[i];
-		}
-	}
-
-	virtual void tearDown() override
-	{
-		this->RBTreeBaseFixture<false>::tearDown();
-
-		this->nodes.clear();
-	}
-
-	std::vector<Node> nodes;
-	Tree t;
-};
-
-class YggTreeInsertFixture : public YggTreeBaseFixture
+template<class MyTreeOptions>
+class YggTreeInsertFixture : public YggTreeBaseFixture<MyTreeOptions>
 {};
 
-
-class YggTreeSearchFixture : public YggTreeBaseFixture
+template<class MyTreeOptions>
+class YggTreeSearchFixture : public YggTreeBaseFixture<MyTreeOptions>
 {
 public:
 	virtual void setUp(const int64_t number_of_nodes) override
 	{
-		this->YggTreeBaseFixture::setUp(number_of_nodes);
+		this->YggTreeBaseFixture<MyTreeOptions>::setUp(number_of_nodes);
 
 		for (auto & n : this->nodes) {
 			this->t.insert(n);
@@ -170,40 +136,10 @@ public:
 		this->t.clear();
 		this->search_values.clear();
 
-		this->YggTreeBaseFixture::tearDown();
+		this->YggTreeBaseFixture<MyTreeOptions>::tearDown();
 	}
 
-	std::vector<Node *> search_values;
-};
-
-class YggMultiTreeInsertFixture : public YggMultiTreeBaseFixture
-{};
-
-
-class YggMultiTreeSearchFixture : public YggMultiTreeBaseFixture
-{
-public:
-	virtual void setUp(const int64_t number_of_nodes) override
-	{
-		this->YggMultiTreeBaseFixture::setUp(number_of_nodes);
-
-		for (auto & n : this->nodes) {
-			this->t.insert(n);
-			this->search_values.push_back(&n);
-		}
-
-		std::random_shuffle(this->search_values.begin(), this->search_values.end());
-	}
-
-	virtual void tearDown() override
-	{
-		this->t.clear();
-		this->search_values.clear();
-
-		this->YggMultiTreeBaseFixture::tearDown();
-	}
-
-	std::vector<Node *> search_values;
+	std::vector<typename YggTreeBaseFixture<MyTreeOptions>::Node *> search_values;
 };
 
 /*
@@ -346,10 +282,17 @@ public:
  */
 
 /*
+ * Various Parameters for the RBTree
+ */
+using BasicTreeOptions = TreeOptions<>;
+using MultiTreeOptions = TreeOptions<TreeFlags::MULTIPLE>;
+using CompressedTreeOptions = TreeOptions<TreeFlags::COMPRESS_COLOR>;
+
+/*
  * Inserting
  */
 
-BENCHMARK_F(RBTreeInsert, Ygg, YggTreeInsertFixture, 30, 50)
+BENCHMARK_F(RBTreeInsert, Ygg, YggTreeInsertFixture<BasicTreeOptions>, 30, 50)
 {
 	this->t.clear();
 
@@ -370,7 +313,17 @@ BASELINE_F(RBTreeInsert, Boostset, BoostSetInsertFixture, 30, 50)
 	celero::DoNotOptimizeAway(this->t);
 }
 
-BENCHMARK_F(RBTreeInsert, MultiYgg, YggMultiTreeInsertFixture, 30, 50)
+BENCHMARK_F(RBTreeInsert, MultiYgg, YggTreeInsertFixture<MultiTreeOptions>, 30, 50)
+{
+	this->t.clear();
+
+	for (auto & n : this->nodes) {
+		this->t.insert(n);
+	}
+	celero::DoNotOptimizeAway(this->t);
+}
+
+BENCHMARK_F(RBTreeInsert, CompressedYgg, YggTreeInsertFixture<CompressedTreeOptions>, 30, 50)
 {
 	this->t.clear();
 
@@ -394,7 +347,7 @@ BENCHMARK_F(RBTreeInsert, BoostMultiSet, BoostMultiSetInsertFixture, 30, 50)
  * Searching
  */
 
-BENCHMARK_F(RBTreeSearch, Ygg, YggTreeSearchFixture, 30, 50)
+BENCHMARK_F(RBTreeSearch, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 30, 50)
 {
   int sum = 0;
 	for (auto & v : this->search_values) {
@@ -416,7 +369,18 @@ BASELINE_F(RBTreeSearch, BoostSet, BoostSetSearchFixture, 30, 50)
 	celero::DoNotOptimizeAway(sum);
 }
 
-BENCHMARK_F(RBTreeSearch, MultiYgg, YggMultiTreeSearchFixture, 30, 50)
+BENCHMARK_F(RBTreeSearch, MultiYgg, YggTreeSearchFixture<MultiTreeOptions>, 30, 50)
+{
+	int sum = 0;
+	for (auto & v : this->search_values) {
+		auto it = this->t.find(*v);
+		sum += it->value;
+	}
+
+	celero::DoNotOptimizeAway(sum);
+}
+
+BENCHMARK_F(RBTreeSearch, CompressedYgg, YggTreeSearchFixture<CompressedTreeOptions>, 30, 50)
 {
 	int sum = 0;
 	for (auto & v : this->search_values) {
@@ -442,7 +406,7 @@ BENCHMARK_F(RBTreeSearch, BoostMultiSet, BoostMultiSetSearchFixture, 30, 50)
  * Iteration
  */
 
-BENCHMARK_F(RBTreeIteration, Ygg, YggTreeSearchFixture, 50, 200)
+BENCHMARK_F(RBTreeIteration, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 50, 200)
 {
 	for (const auto & n : this->t) {
 		//sum += n.value;
@@ -458,7 +422,15 @@ BASELINE_F(RBTreeIteration, BoostSet, BoostSetSearchFixture, 50, 200)
 	}
 }
 
-BENCHMARK_F(RBTreeIteration, MultiYgg, YggMultiTreeSearchFixture, 50, 200)
+BENCHMARK_F(RBTreeIteration, MultiYgg, YggTreeSearchFixture<MultiTreeOptions>, 50, 200)
+{
+	for (const auto & n : this->t) {
+		//sum += n.value;
+		celero::DoNotOptimizeAway(n);
+	}
+}
+
+BENCHMARK_F(RBTreeIteration, CompressedYgg, YggTreeSearchFixture<CompressedTreeOptions>, 50, 200)
 {
 	for (const auto & n : this->t) {
 		//sum += n.value;
@@ -478,7 +450,7 @@ BENCHMARK_F(RBTreeIteration, BoostMultiSet, BoostMultiSetSearchFixture, 50, 200)
  * Deletion
  */
 
-BENCHMARK_F(RBTreeDelete, Ygg, YggTreeSearchFixture, 1000, 1)
+BENCHMARK_F(RBTreeDelete, Ygg, YggTreeSearchFixture<BasicTreeOptions>, 1000, 1)
 {
 	for (auto & v : this->search_values) {
 		this->t.remove(*v);
@@ -496,7 +468,16 @@ BASELINE_F(RBTreeDelete, BoostSet, BoostSetSearchFixture, 1000, 1)
 	celero::DoNotOptimizeAway(this->t);
 }
 
-BENCHMARK_F(RBTreeDelete, MultiYgg, YggMultiTreeSearchFixture, 1000, 1)
+BENCHMARK_F(RBTreeDelete, MultiYgg, YggTreeSearchFixture<MultiTreeOptions>, 1000, 1)
+{
+	for (auto & v : this->search_values) {
+		this->t.remove(*v);
+	}
+
+	celero::DoNotOptimizeAway(this->t);
+}
+
+BENCHMARK_F(RBTreeDelete, CompressedYgg, YggTreeSearchFixture<CompressedTreeOptions>, 1000, 1)
 {
 	for (auto & v : this->search_values) {
 		this->t.remove(*v);
